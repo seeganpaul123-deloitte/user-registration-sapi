@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <http:listener-config name="user-registration-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="user-registration-config" api="resource::b8cf1f1a-23fa-40f7-b53f-64bac8e0dba3:user-registration:1.0.4:raml:zip:user-registration.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="user-registration-main">
+        <http:listener config-ref="user-registration-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="user-registration-config" />
+    </flow>
+    <flow name="user-registration-console">
+        <http:listener config-ref="user-registration-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="user-registration-config" />
+    </flow>
+    <flow name="post:\login:application\json:user-registration-config">
+        <flow-ref doc:name="login flow" doc:id="3086b8ca-7b42-498f-86c0-d97e405d25f1" name="loginImplFlow" />
+    </flow>
+    <flow name="post:\signup:application\json:user-registration-config">
+        <flow-ref doc:name="SignUp flow" doc:id="3ba6aa57-9d5c-48f6-ad7c-3c983dbd786e" name="signUpImpl" />
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "User is Successfully registered"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\status:user-registration-config">
+        <flow-ref doc:name="status flow" doc:id="a95b2487-e15b-47de-b9b8-8fdd1b6ebbde" name="statusImplFlow" />
+    </flow>
+    <flow name="post:\sendOTP:application\json:user-registration-config">
+        <flow-ref doc:name="Flow Reference" doc:id="db2aedeb-96db-4f39-b0ad-3474b8787bba" name="sendOTP"/>
+		<ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  otp: vars.otp
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\user\(username):user-registration-config">
+        <flow-ref doc:name="Flow Reference" doc:id="2186ef6c-f1c9-49dd-883a-3d09b58dc306" name="getUserFlow"/>
+    </flow>
+</mule>

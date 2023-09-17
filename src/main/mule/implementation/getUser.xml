@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="getUserFlow" doc:id="12105b97-4e1f-4c4e-93ae-61f19e4faf64" >
+		<logger level="INFO" doc:name="Logger" doc:id="a64b60a3-3d69-48e0-be67-0a6957217003" message="started executing getUser flow"/>
+		<db:select doc:name="Select" doc:id="d447ff92-cebc-41ef-8014-292acd881b82" config-ref="PostgreSql_Connection">
+			<db:sql ><![CDATA[select * from users where username = :username]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	username: attributes.uriParams.username
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="8121fa81-bd5d-43b8-960b-afe06256a978" >
+			<ee:message >
+				<ee:set-payload resource = "dwl/getUser.dwl"/> 
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="0abdcdb0-82a8-4a12-8161-074fd4965e7a" message="finished executing getUser flow"/>
+	</flow>
+</mule>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:azure-service-bus-messaging="http://www.mulesoft.org/schema/mule/azure-service-bus-messaging" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/azure-service-bus-messaging http://www.mulesoft.org/schema/mule/azure-service-bus-messaging/current/mule-azure-service-bus-messaging.xsd">
+	<flow name="signUpImpl" doc:id="9d0382cb-708a-4d7f-a680-a7240ac2ce42" >
+		<logger level="INFO" doc:name="Logger" doc:id="34657792-2034-4fa2-98d9-c5d7709bd56e" message="started to execute signUpImpl flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="f1587ebb-d985-4baa-995b-033877a88c0b" >
+			<ee:message >
+				<ee:set-payload resource = "dwl/signup.dwl" />
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="account" resource = "dwl/account.dwl" />
+			</ee:variables>
+		</ee:transform>
+		<db:insert doc:name="Insert" doc:id="7e16488c-1056-48d4-bc63-a7baf2d691c0" config-ref="PostgreSql_Connection">
+			<db:sql ><![CDATA[insert into users(username, phone_no, address) values( :username, :phone_no, :address)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	username: payload.username,
+	phone_no: payload.phone_no,
+	address: payload.address
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger" doc:id="dfd3c3eb-ae12-4569-afdb-da26fd3da4da" message="sending details to create account for user in salesforce"/>
+		<azure-service-bus-messaging:send doc:name="Send" doc:id="675946e2-bc8f-4c36-a939-dca27ae5bca1" destinationName="salesforce-accounts" config-ref="Azure_Service_Bus_Messaging_Connector_Config">
+			<azure-service-bus-messaging:body ><![CDATA[#[vars.account]]]></azure-service-bus-messaging:body>
+		</azure-service-bus-messaging:send>
+		<logger level="INFO" doc:name="Logger" doc:id="cd84cfe7-48ec-401b-8887-b0a44a9d1faf" message="finished executing signUpImpl flow"/>
+	</flow>
+</mule>

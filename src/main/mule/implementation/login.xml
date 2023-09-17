@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="loginImplFlow" doc:id="a45d664f-ad39-4079-bee5-0b06e5f56b15" >
+		<logger level="INFO" doc:name="Logger" doc:id="54a1d21f-6541-4a96-a43f-3fc756386c9b" message="started executing loginImpl flow"/>
+		<set-variable value="#[payload.otp]" doc:name="otp" doc:id="6d54a47c-7486-4ec6-8641-6a44fd719832" variableName="otp"/>
+		<set-variable value="#[payload.username]" doc:name="username" doc:id="79b41975-d65e-47a7-86d1-30d1d55c9a53" variableName="username"/>
+		<db:select doc:name="Select" doc:id="1df96cc6-017e-4bd3-b0f5-b533b3fec1d2" config-ref="PostgreSql_Connection">
+			<db:sql ><![CDATA[select otp from user_otp where username = :username]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	username: payload.username
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="d4e62718-5145-4e2b-8941-999e186760c9" message="#[payload]"/>
+		<choice doc:name="Choice" doc:id="d0183aa7-c6f9-435e-8c36-6ecec79a0d4a" >
+			<when expression="#[vars.otp == payload.otp[0]]">
+				<db:update doc:name="Update" doc:id="e43d8c17-fcae-4cb3-9e13-42eefacda581" config-ref="PostgreSql_Connection">
+					<db:sql ><![CDATA[update user_otp set status = :status where username = :username]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	status: "verified",
+	username: vars.username
+}]]]></db:input-parameters>
+				</db:update>
+				<logger level="INFO" doc:name="Logger" doc:id="9d84c4c7-37aa-4683-a072-aa0639fba115" message="status is updated"/>
+				<ee:transform doc:name="Transform Message" doc:id="f82085d1-37df-4483-ab71-73679dda66e1" >
+					<ee:message >
+						<ee:set-payload resource = "dwl/login.dwl" />
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="aeaca131-242f-4109-bbef-5868b206bf26" message="finished executing verificationImpl flow"/>
+			</when>
+			<otherwise >
+				<logger level="ERROR" doc:name="Logger" doc:id="0b858fbf-6e58-46fc-a82c-2ff1d5409154" message="The OTP is not matching!" />
+				<raise-error doc:name="Raise error" doc:id="c214a441-2779-45e3-89c5-d306aa8d9a67" type="APP:NOT_MATCH" description="The OTP is not matching!"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

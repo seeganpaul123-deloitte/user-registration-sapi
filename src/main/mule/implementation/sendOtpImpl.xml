@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:twilio="http://www.mulesoft.org/schema/mule/twilio" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/twilio http://www.mulesoft.org/schema/mule/twilio/current/mule-twilio.xsd">
+	<flow name="sendOTP" doc:id="a5f349fb-5b40-4ceb-b6f7-5243c50ac251" >
+		<logger level="INFO" doc:name="Logger" doc:id="7aa51049-dd4c-4e75-918d-31a5a2c5e394" message="started executing sendOTPImpl flow"/>
+		<set-variable value="#[payload.username]" doc:name="username" doc:id="28e102e4-8daa-434a-bcf1-a2542981e659" variableName="username"/>
+		<ee:transform doc:name="generate otp" doc:id="46581eb4-8315-4f45-8eaf-681b18979d2d" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="otp" resource = "dwl/generateOTP.dwl" />
+			</ee:variables>
+		</ee:transform>
+		<db:select doc:name="Select" doc:id="e0ee158f-d1fb-4a4a-b3b3-088efc9d32c4" config-ref="PostgreSql_Connection">
+			<db:sql ><![CDATA[select * from user_otp where username = :username]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	username: payload.username
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="5e66d508-d496-4702-9400-dd711450fd3d" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<db:update doc:name="Update" doc:id="2816055b-9c25-4bfd-b3c4-b68034b937c6" config-ref="PostgreSql_Connection">
+					<db:sql ><![CDATA[update user_otp set otp = :otp, time_stamp = :time_stamp, status = :status where username = :username]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	otp: vars.otp,
+	time_stamp: now() as Number,
+	status: "not verified",
+	username: payload[0].username 
+}]]]></db:input-parameters>
+				</db:update>
+				<logger level="INFO" doc:name="Logger" doc:id="1454ba6f-232d-41ed-b561-bc96eb17021f" message="finished executing sendOTP Impl flow" />
+			</when>
+			<otherwise >
+				<db:insert doc:name="Insert" doc:id="8ac51b7e-e1e5-45fe-bc2d-338b74721795" config-ref="PostgreSql_Connection">
+			<db:sql><![CDATA[insert into user_otp(username, otp, time_stamp, status) values(:username, :otp, :time_stamp, :status)]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	username: vars.username,
+	otp: vars.otp,
+	status: "not verified",
+	time_stamp: now() as Number 
+}]]]></db:input-parameters>
+		</db:insert>
+				<logger level="INFO" doc:name="Logger" doc:id="d6b06e1a-37a2-4319-8baa-f00e60ef61ab" message="finished executing sendOTP Impl flow" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

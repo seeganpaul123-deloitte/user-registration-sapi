@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:azure-service-bus-messaging="http://www.mulesoft.org/schema/mule/azure-service-bus-messaging"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/azure-service-bus-messaging http://www.mulesoft.org/schema/mule/azure-service-bus-messaging/current/mule-azure-service-bus-messaging.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="subcribeFlow" doc:id="3b98943c-61d4-4ab4-89cb-c06c943486f7" >
+		<azure-service-bus-messaging:message-listener doc:name="Message listener" doc:id="dfecd825-cf82-444c-a945-70abd097461f" ackMode="AUTO" destinationName="salesforce-user" config-ref="Azure_Service_Bus_Messaging_Connector_Config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="e73f5c60-f6c6-4c5c-bda3-9863640f74de" message="message recieved"/>
+		<logger level="INFO" doc:name="payload" doc:id="221bbd26-4397-4025-98ea-14b560c64cd3" message="#[output application/json --- payload]"/>
+		<db:update doc:name="Update" doc:id="a20ced32-32be-48c8-b61c-57329c8064c8" config-ref="PostgreSql_Connection">
+			<db:sql ><![CDATA[update users set salesforce_id = :salesforce_id where username = :username]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	username: payload.username,
+	salesforce_id: payload.salesforceId
+}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="117ee09d-0eef-4471-a4f7-768cb103d427" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+null]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="f9287e13-eb6f-443e-ba44-71b6fa4f3ffc" message="message is updated in the DB"/>
+	</flow>
+</mule>

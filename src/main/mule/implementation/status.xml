@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="statusImplFlow" doc:id="7458eb4f-44dd-404e-b1e9-250dcba90575" >
+		<logger level="INFO" doc:name="Logger" doc:id="94ce5c89-9de8-4396-972b-b8ba8e0534a7" message="started executing statusImpl flow"/>
+		<set-variable value="#[attributes.queryParams.username]" doc:name="username" doc:id="b82d812b-6d28-4eb6-9d5b-f6d66357a6d5" variableName="username"/>
+		<db:select doc:name="Select" doc:id="51dbc899-8688-467d-9ba6-c115f100fff5" config-ref="PostgreSql_Connection">
+			<db:sql ><![CDATA[select status, time_stamp from user_otp where username = :username]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	username: vars.username
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="714fe9f6-03ac-4f26-a991-2c04886dceda" message="#[payload]"/>
+		<choice doc:name="Choice" doc:id="79120831-d664-4fe1-894c-4d311b0b3a90" >
+			<when expression='#[now() as Number - payload[0].time_stamp as Number &lt; 600 and (payload[0].status == "verified")]'>
+				<ee:transform doc:name="Transform Message" doc:id="e39b309c-5283-42be-a178-21acaedc8571" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "verified"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="af7f77e2-edd5-41b5-b9ad-5ac02bf75c38" message="finished executing statusImpl flow"/>
+			</when>
+			<otherwise >
+				<db:update doc:name="Update" doc:id="01f21bdd-a274-4717-a937-a8b39f75fa24" config-ref="PostgreSql_Connection">
+					<db:sql ><![CDATA[update user_otp set status = :status where username = :username]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	status: "expired",
+	username: vars.username
+}]]]></db:input-parameters>
+				</db:update>
+				<ee:transform doc:name="Transform Message" doc:id="69fe7498-efd8-4a84-95dc-28b56b52a67e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": "expired"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="d7b938bc-7e11-4827-8668-186da98d670f" message="finished executing statusImpl flow" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

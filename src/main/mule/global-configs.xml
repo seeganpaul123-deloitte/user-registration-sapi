@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:azure-service-bus-messaging="http://www.mulesoft.org/schema/mule/azure-service-bus-messaging"
+	xmlns:twilio="http://www.mulesoft.org/schema/mule/twilio"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/twilio http://www.mulesoft.org/schema/mule/twilio/current/mule-twilio.xsd
+http://www.mulesoft.org/schema/mule/azure-service-bus-messaging http://www.mulesoft.org/schema/mule/azure-service-bus-messaging/current/mule-azure-service-bus-messaging.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+	<db:config name="PostgreSql_Connection" doc:name="Database Config" doc:id="ae81092b-25e3-4f75-9f81-d586ebf5c253" >
+		<db:generic-connection url="${secure::db.url}" driverClassName="${secure::db.driver}" user="${secure::db.user}" password="${secure::db.password}" />
+	</db:config>
+	<configuration doc:name="Configuration" doc:id="47fdccac-2c3d-4846-b077-dbf0da8578aa" defaultErrorHandler-ref="global-Error_Handler" />
+	<configuration-properties doc:name="Configuration properties" doc:id="334db093-7cc2-4499-bc92-c63ce696a468" file="config.yaml" />
+	<azure-service-bus-messaging:config name="Azure_Service_Bus_Messaging_Connector_Config" doc:name="Azure Service Bus Messaging Connector Config" doc:id="68bf6963-b7f3-4a49-b421-4a41ea09aa29" >
+		<azure-service-bus-messaging:sas-connection namespace="${secure::azure.namespace}" sharedAccessKeyName="${secure::azure.accesskey}" sharedAccessKey="${secure::azure.sas}" />
+	</azure-service-bus-messaging:config>
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="f44ce60c-1941-4751-bde8-df118276b50c" file="config.yaml" key="${encryptkey}" >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<global-property doc:name="Global Property" doc:id="ce29a5e7-416e-462c-89a9-f49c0eddc948" name="encryptkey" value="seegan" />
+</mule>
